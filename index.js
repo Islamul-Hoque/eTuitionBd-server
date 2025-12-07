@@ -47,6 +47,7 @@ async function run() {
         // Database and Collection
         const db = client.db('eTuitionBdDB');
         const userCollection = db.collection('users');
+        const tuitionCollection = db.collection('tuitions');
 
         // User APIs
         app.post('/users', async (req, res) => {
@@ -66,7 +67,15 @@ async function run() {
             res.send(result);
         });
 
-        await client.db("admin").command({ ping: 1 });
+        // latest tuition posts for homepage
+        app.get('/latest-tuitions', async (req, res) => {
+            const result = await tuitionCollection.find({}).sort({ createdAt: -1 }).limit(4).toArray();
+            res.send(result);
+        });
+        
+        
+
+        // await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
         // await client.close();

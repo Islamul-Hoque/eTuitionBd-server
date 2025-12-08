@@ -91,23 +91,6 @@ async function run() {
   res.send(result);
 });
 
-// app.get("/all-tuitions", async (req, res) => {
-//   try {
-//     const { limit = 0, skip = 0, sort = "class", order = "desc", search = "",  } = req.query;
-//     const sortOption = {};
-//     let query = {};
-
-//     if (search) { query.subject = { $regex: search, $options: "i" };}
-//     sortOption[sort || "class"] = order === "asc" ? 1 : -1;
-//     const apps = await tuitionCollection.find(query).sort(sortOption).limit(Number(limit)).skip(Number(skip)).project({ description: 0, ratings: 0 }).toArray();
-//     const count = await tuitionCollection.countDocuments(query);
-
-//     res.send({ apps, total: count });
-//     } catch (error) {
-//     console.log(error);
-//     res.status(500).json({ error: "Internal Server Error" });
-//    }
-// });
 
 
 
@@ -119,6 +102,12 @@ async function run() {
             const result = await userCollection.find({ role: 'Tutor' }).sort({ createdAt: -1 }).limit(4).toArray();
             res.send(result);
         }); 
+
+        // All tutors get api
+        app.get('/all-tutors', async (req, res) => {
+            const result = await userCollection.find({ role: 'Tutor' }).toArray();
+            res.send(result);
+        });
 
         // await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");

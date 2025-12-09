@@ -74,32 +74,32 @@ async function run() {
             res.send(result);
         });
 
-        // Get single tuition post
+        // Get single tuition post(Details page)
         app.get('/tuition/:id', async (req, res) => {
             const id = req.params.id;
             const result = await tuitionCollection.findOne({ _id: new ObjectId(id) });
             res.send(result);
         });
 
-        // Apply for a tuition post
-app.post('/apply-tuition', async (req, res) => {
-  const application = req.body;
-  application.appliedAt = new Date();
-  application.status = "Pending";
+        // Apply for a tuition post (Details page)
+        app.post('/apply-tuition', async (req, res) => {
+            const application = req.body;
+            application.appliedAt = new Date();
+            application.status = "Pending";
 
-  // Duplicate application check
-  const existing = await applyTuitionCollection.findOne({
-    tuitionId: application.tuitionId,
-    tutorEmail: application.tutorEmail
-  });
+            // Duplicate application check
+            const existing = await applyTuitionCollection.findOne({
+                tuitionId: application.tuitionId,
+                tutorEmail: application.tutorEmail
+            });
 
-  if (existing) {
-    return res.send({ success: false, message: "You have already applied for this tuition." });
-  }
+            if (existing) { 
+                return res.send({ success: false, message: "You have already applied for this tuition." });
+            }
 
-  const result = await applyTuitionCollection.insertOne(application);
-  res.send({ success: true, message: "Application submitted successfully!", insertedId: result.insertedId });
-});
+            const result = await applyTuitionCollection.insertOne(application);
+            res.send({ success: true, message: "Application submitted successfully!", insertedId: result.insertedId });
+        });
 
 
         // All tuition get api
@@ -108,7 +108,7 @@ app.post('/apply-tuition', async (req, res) => {
         //     res.send(result);
         // });
 
-// Jamela ache
+        // Jamela ache
         app.get('/all-tuitions', async (req, res) => {
             const search = req.query.search || "";
             const query = {
@@ -121,8 +121,6 @@ app.post('/apply-tuition', async (req, res) => {
             res.send(result);
         });
 
-
-
         // latest-tutors get api for homepage
         app.get('/latest-tutors', async (req, res) => {
             const result = await userCollection.find({ role: 'Tutor' }).sort({ createdAt: -1 }).limit(4).toArray();
@@ -134,6 +132,17 @@ app.post('/apply-tuition', async (req, res) => {
             const result = await userCollection.find({ role: 'Tutor' }).toArray();
             res.send(result);
         });
+
+    // Dashboard related APIs........
+        // Add tuition post
+        app.post('/add-tuition', async (req, res) => {
+            const tuition = req.body;
+            tuition.createdAt = new Date();
+            tuition.status = "Pending";
+            const result = await tuitionCollection.insertOne(tuition);
+            res.send(result);
+        });
+
 
         // await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");

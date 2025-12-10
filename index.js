@@ -186,6 +186,15 @@ async function run() {
         });
 
 
+        // Tutor related APIs
+        // Get all applications by tutor email
+        app.get('/my-applications/tutor/:email', async (req, res) => {
+            const tutorEmail = req.params.email;
+            const result = await applyTuitionCollection.find({ tutorEmail: tutorEmail }).sort({appliedAt: -1}).toArray();
+            res.send(result);
+        });
+
+
         // await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {

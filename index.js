@@ -194,6 +194,28 @@ async function run() {
             res.send(result);
         });
 
+        // Update application (only if not approved)
+app.patch('/applications/:id', async (req, res) => {
+  const id = req.params.id;
+  const updateData = req.body;
+  const result = await applyTuitionCollection.updateOne(
+    { _id: new ObjectId(id), status: { $ne: "Approved" } },
+    { $set: updateData }
+  );
+  res.send(result);
+});
+
+// Delete application (only if not approved)
+// app.delete('/applications/:id', async (req, res) => {
+//   const id = req.params.id;
+//   const result = await applyTuitionCollection.deleteOne({
+//     _id: new ObjectId(id),
+//     status: { $ne: "Approved" }
+//   });
+//   res.send(result);
+// });
+
+
 
         // await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");

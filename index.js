@@ -176,7 +176,7 @@ async function run() {
         });
 
 
-        // Get all applications for a specific tuition post
+// Get all applications for a specific tuition post
         app.get('/applications/student/:email', async (req, res) => {
             const studentEmail = req.params.email;
 
@@ -261,7 +261,6 @@ async function run() {
         })
 
         // Dashboard role condition check
-
         app.get('/users/:email/role', async (req, res) => {
             const email = req.params.email;
             const query = { email }
@@ -269,6 +268,50 @@ async function run() {
             res.send({ role: user?.role || 'user' })
         })
 
+
+
+
+// Create Stripe checkout session for tutor application
+app.post('/payment-checkout-session', async (req, res) => {
+  const { applicationId, expectedSalary, tutorEmail, tuitionId, studentEmail } = req.body;
+  const amount = parseInt(expectedSalary) * 100;
+
+  try {
+    const session = await stripe.checkout.sessions.create({
+      line_items: [
+        {
+          price_data: {
+            currency: 'usd',
+            unit_amount: amount,
+            product_data: {
+              name: `Tutor Application Payment`
+            }
+          },
+          quantity: 1,
+        },
+      ],
+      mode: 'payment',
+      metadata: { applicationId, tuitionId, tutorEmail },
+      customer_email: studentEmail,
+      success_url: `${process.env.SITE_DOMAIN}/dashboard/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.SITE_DOMAIN}/dashboard/payment-cancelled`,
+    });
+
+    res.send({ url: session.url });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ error: "Failed to create checkout session" });
+  }
+});
+
+
+
+
+
+
+
+
+        
 
         // await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");

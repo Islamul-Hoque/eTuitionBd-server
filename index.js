@@ -175,7 +175,6 @@ async function run() {
             res.send({ success: true, message: "Application submitted successfully!", insertedId: result.insertedId });
         });
 
-
         // Get all applications for a specific tuition post(Applied Tutors pages)
         app.get('/applications/student/:email', async (req, res) => {
             const studentEmail = req.params.email;
@@ -198,6 +197,21 @@ async function run() {
             const email = req.params.email;
             const payments = await paymentCollection.find({ studentEmail: email, paymentStatus: 'paid' }).sort({ paidAt: -1 }).toArray();
             res.send(payments);
+        });
+
+        // Student stats API (Student Dashboard Home)
+        app.get('/student/stats/:email', async (req, res) => {
+            try {
+                const email = req.params.email;
+                const totalPosts = await tuitionCollection.countDocuments({ studentEmail: email });
+                const approved = await tuitionCollection.countDocuments({ studentEmail: email, status: 'Approved' });
+                const pending = await tuitionCollection.countDocuments({ studentEmail: email, status: 'Pending' });
+                const rejected = await tuitionCollection.countDocuments({ studentEmail: email, status: 'Rejected' });
+                res.send({ totalPosts, approved, pending, rejected });
+            } catch (err) {
+                console.error(err);
+                res.status(500).send({ error: 'Failed to fetch student stats' });
+            }
         });
 
     // Tutor related APIs

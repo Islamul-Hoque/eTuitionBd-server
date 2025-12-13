@@ -138,7 +138,6 @@ async function run() {
             res.send(result);
         });
 
-
         // delete tuition post by id
         app.delete('/tuition/:id', async (req, res) => {
             const id = req.params.id;
@@ -161,7 +160,7 @@ async function run() {
             } catch (error) { res.status(500).send({ error: "Failed to update tuition post" });}
         });
 
-        // Apply for a tuition post
+        // Apply for a tuition post (Details page)
         app.post('/apply-tuition', async (req, res) => {
             const application = req.body;
             application.appliedAt = new Date();
@@ -177,7 +176,7 @@ async function run() {
         });
 
 
-// Get all applications for a specific tuition post
+        // Get all applications for a specific tuition post(Applied Tutors pages)
         app.get('/applications/student/:email', async (req, res) => {
             const studentEmail = req.params.email;
 
@@ -194,6 +193,12 @@ async function run() {
             }
         });
 
+        // Student payment history API
+        app.get('/payments/:email', async (req, res) => {
+            const email = req.params.email;
+            const payments = await paymentCollection.find({ studentEmail: email, paymentStatus: 'paid' }).sort({ paidAt: -1 }).toArray();
+            res.send(payments);
+        });
 
     // Tutor related APIs
         // Get all applications by tutor email

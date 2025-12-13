@@ -320,6 +320,51 @@ async function run() {
             }
         });
 
+        // Admin dashboard stats
+        app.get('/admin/stats', async (req, res) => {
+            try {
+            const userPipeline = [
+                {
+                    $group: {
+                        _id: '$status',
+                        count: { $sum: 1 }
+                    }
+                }
+            ];
+            const userStats = await userCollection.aggregate(userPipeline).toArray();
+
+            const rolePipeline = [
+                {
+                    $group: {
+                        _id: '$role',
+                        count: { $sum: 1 }
+                    }
+                }
+            ];
+            const roleStats = await userCollection.aggregate(rolePipeline).toArray();
+
+            // Tuition posts stats
+            const tuitionPipeline = [
+                {
+                    $group: {
+                        _id: '$status',
+                        count: { $sum: 1 }
+                    }
+                }
+            ];
+            const tuitionStats = await tuitionCollection.aggregate(tuitionPipeline).toArray();
+
+            // Total tuition posts
+            const totalTuitions = await tuitionCollection.countDocuments();
+            res.send({ userStats, roleStats, tuitionStats, totalTuitions });
+            } catch (err) {
+                console.error(err);
+                res.status(500).send({ error: "Failed to fetch admin stats" });
+            }
+        });
+
+
+
 // Verify payment success and approve tutor application
 app.patch('/payment-success', async (req, res) => {
   const sessionId = req.query.session_id;
@@ -368,7 +413,7 @@ app.patch('/payment-success', async (req, res) => {
     return res.send(payment);
   }
 
-  res.send({ success: false });
+  return res.send({ success: false });
 });
 
 

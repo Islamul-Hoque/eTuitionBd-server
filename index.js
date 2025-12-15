@@ -51,7 +51,7 @@ async function run() {
         const applyTuitionCollection = db.collection('appliedTuitions');
         const paymentCollection = db.collection('payments');
 
-        // User APIs
+        // User APIs (Register & Login user info )
         app.post('/users', async (req, res) => {
             const user = req.body;
             user.createdAt = new Date();
@@ -70,21 +70,21 @@ async function run() {
             res.send(result);
         });
 
+    // (Home Page related APIs)
         // latest tuition posts for homepage
         app.get('/latest-tuitions', async (req, res) => {
             const result = await tuitionCollection.find({status: "Approved"}).sort({ createdAt: -1 }).limit(4).toArray();
             res.send(result);
         });
 
-        // Get single tuition post(Details page)
+        // Get single tuition post (Details page)
         app.get('/tuition/:id', async (req, res) => {
             const id = req.params.id;
             const result = await tuitionCollection.findOne({ _id: new ObjectId(id) });
             res.send(result);
         });
 
-
-        // All tuition get api
+        // All tuition get api (All tuition page)
         app.get('/all-tuitions', async (req, res) => {
             const result = await tuitionCollection.find({status: "Approved"}).sort({createdAt: -1}).toArray();
             res.send(result);
@@ -104,20 +104,21 @@ async function run() {
         //     res.send(result);
         // });
 
-        // latest-tutors get api for homepage
+        // latest-tutors get api (for homepage)
         app.get('/latest-tutors', async (req, res) => {
             const result = await userCollection.find({ role: 'Tutor' }).sort({ createdAt: -1 }).limit(4).toArray();
             res.send(result);
         }); 
 
-        // All tutors get api
+        // All tutors get api (All tutors page)
         app.get('/all-tutors', async (req, res) => {
             const result = await userCollection.find({ role: 'Tutor' }).sort({createdAt: -1}).toArray();
             res.send(result);
         });
 
-    // Dashboard related APIs........
-        // Add tuition post
+    // Dashboard related APIs
+    // Student dashboard related APIs
+        // Add tuition post ( Add Tuition page)
         app.post('/add-tuition', async (req, res) => {
             const tuition = req.body;
             tuition.createdAt = new Date();
@@ -126,7 +127,7 @@ async function run() {
             res.send(result);
         });
 
-        // get all tuition post by student email
+        // Get all tuition post by student email (My Tuitions page-Get)
         app.get('/my-tuitions', async (req, res) => {
             const email = req.query.email;
             const query = {
@@ -138,14 +139,14 @@ async function run() {
             res.send(result);
         });
 
-        // delete tuition post by id
+        // delete tuition post by id (My Tuitions page-Delete)
         app.delete('/tuition/:id', async (req, res) => {
             const id = req.params.id;
             const result = await tuitionCollection.deleteOne({ _id: new ObjectId(id) });
             res.send(result);
         });
 
-        // Update tuition post by id
+        // Update tuition post by id (My Tuitions page-Update)
         app.patch('/tuition/:id', async (req, res) => {
             const id = req.params.id;
             const updatedTuition = req.body;
@@ -160,7 +161,7 @@ async function run() {
             } catch (error) { res.status(500).send({ error: "Failed to update tuition post" });}
         });
 
-        // Apply for a tuition post (Details page)
+        // Apply for a tuition post (Details page - Tutor Apply)
         app.post('/apply-tuition', async (req, res) => {
             const application = req.body;
             application.appliedAt = new Date();
@@ -187,19 +188,18 @@ async function run() {
 
                 res.send(result);
             } catch (error) {
-                console.error("Error fetching applications:", error);
-                res.status(500).send({ error: "Failed to fetch applications" });
+                res.send({ error: "Failed to fetch applications" });
             }
         });
 
-        // Student payment history API
+        // Student payment history API (Payment History page)
         app.get('/payments/:email', async (req, res) => {
             const email = req.params.email;
             const payments = await paymentCollection.find({ studentEmail: email, paymentStatus: 'paid' }).sort({ paidAt: -1 }).toArray();
             res.send(payments);
         });
 
-        // Student stats API (Student Dashboard Home)
+        // Student stats API (Student Dashboard Home page)
         app.get('/student/stats/:email', async (req, res) => {
             try {
                 const email = req.params.email;
@@ -215,14 +215,14 @@ async function run() {
         });
 
     // Tutor related APIs
-        // Get all applications by tutor email
+        // Get all applications by tutor email (My Applications page)
         app.get('/my-applications/tutor/:email', async (req, res) => {
             const tutorEmail = req.params.email;
             const result = await applyTuitionCollection.find({ tutorEmail: tutorEmail }).sort({appliedAt: -1}).toArray();
             res.send(result);
         });
 
-        // Update application (only if not approved)
+        // Update application (My Applications page-Update)
         app.patch('/applications/:id', async (req, res) => {
             const id = req.params.id;
             const updateData = req.body;
@@ -233,33 +233,32 @@ async function run() {
             res.send(result);
         });
 
-        // Delete application (only if not approved)
+        // Delete application (My Applications page-Delete)
         app.delete('/applications/:id', async (req, res) => {
             const id = req.params.id;
             const result = await applyTuitionCollection.deleteOne({ _id: new ObjectId(id), status: { $ne: "Approved" } });
             res.send(result);
         });
 
-        // Ongoing tuitions for a tutor
+        // Ongoing tuitions for a tutor (Ongoing Tuitions page)
         app.get('/tuitions/ongoing/:email', async (req, res) => {
             const tutorEmail = req.params.email;
             try {
             const ongoingTuitions = await applyTuitionCollection.find({ tutorEmail: tutorEmail, status: "Approved" }).toArray();
             res.send(ongoingTuitions);
             } catch (err) {
-                console.error(err);
-            res.status(500).send({ error: "Failed to fetch ongoing tuitions" });
+                res.status(500).send({ error: "Failed to fetch ongoing tuitions" });
             }
         });
 
-        // Revenue details for a tutor
+        // Revenue details for a tutor (Revenue History page)
         app.get('/revenue/:tutorEmail', async (req, res) => {
             const tutorEmail = req.params.tutorEmail;
             const payments = await paymentCollection.find({ tutorEmail }).toArray();
             res.send(payments);
         });
 
-        // Tutor stats API
+        // Tutor stats API(Tutor Dashboard Home page)
         app.get('/tutor/stats/:email', async (req, res) => {
             try {
                 const email = req.params.email;
@@ -274,14 +273,14 @@ async function run() {
             }
         });
 
-    // Admin related APIs can be added here...
-        // User Management Page (Get all users)
+    // Admin related APIs...
+        // Get all users (User Management Page)
         app.get('/users', async (req, res) => {
             const result = await userCollection.find({}).sort({createdAt: -1}).toArray();
             res.send(result);
         });
 
-        // Update user info (Admin only)
+        // Update user info (User Management-Update)
         app.patch('/users/:id', async (req, res) => {
             const id = req.params.id;
             const updateData = req.body;
@@ -289,24 +288,23 @@ async function run() {
             res.send(result);
         });
 
-        // Delete user account (Admin only)
+        // Delete user account (User Management-Delete)
         app.delete('/users/:id', async (req, res) => {
-                const id = req.params.id;
-                const result = await userCollection.deleteOne({ _id: new ObjectId(id) });
-                res.send(result);
+            const id = req.params.id;
+            const result = await userCollection.deleteOne({ _id: new ObjectId(id) });
+            res.send(result);
         });
 
-        // Tuition Management page
-        // Get all pending tuition posts (Admin review)
+        // Get all pending tuition posts (Tuition Management page-Get)
         app.get('/tuitions/pending', async (req, res) => {
             const result = await tuitionCollection.find({ status: "Pending" }).sort({ createdAt: -1 }).toArray();
             res.send(result);
         });
 
-        // Update tuition status (Approve / Reject)
+        // Update tuition status (Tuition Management page-Update)
         app.patch('/tuitions/:id', async (req, res) => {
             const id = req.params.id;
-            const { status } = req.body; // "Approved" or "Rejected"
+            const { status } = req.body; 
             const result = await tuitionCollection.updateOne( 
                 { _id: new ObjectId(id) }, 
                 { $set: { status } }
@@ -314,7 +312,72 @@ async function run() {
             res.send(result);
         })
 
-// Dashboard role condition check (Role base conditional rendering)
+        // Reports & Analytics API (Reports & Analytics page)
+        app.get('/admin/reports', async (req, res) => {
+            try {
+                const totalEarningsAgg = await paymentCollection.aggregate([
+                    { $match: { 
+                        paymentStatus: 'paid' 
+                        }
+                    },
+                    { $group: {
+                        _id: null, 
+                        total: { $sum: '$amount' } } 
+                    }
+                ]).toArray();
+                const totalEarnings = totalEarningsAgg[0]?.total || 0;
+
+                const transactions = await paymentCollection.find({ paymentStatus: 'paid' }).sort({ paidAt: -1 }).toArray();
+                res.send({ totalEarnings, transactions });
+            } catch (err) {
+                console.error(err);
+                res.status(500).send({ error: 'Failed to fetch reports' });
+            }
+            });
+
+        // Admin dashboard stats (Admin Dashboard Home page)
+        app.get('/admin/stats', async (req, res) => {
+            try {
+            const userPipeline = [
+                {
+                    $group: {
+                        _id: '$status',
+                        count: { $sum: 1 }
+                    }
+                }
+            ];
+            const userStats = await userCollection.aggregate(userPipeline).toArray();
+
+            const rolePipeline = [
+                {
+                    $group: {
+                        _id: '$role',
+                        count: { $sum: 1 }
+                    }
+                }
+            ];
+            const roleStats = await userCollection.aggregate(rolePipeline).toArray();
+
+            const tuitionPipeline = [
+                {
+                    $group: {
+                        _id: '$status',
+                        count: { $sum: 1 }
+                    }
+                }
+            ];
+            const tuitionStats = await tuitionCollection.aggregate(tuitionPipeline).toArray();
+
+            const totalTuitions = await tuitionCollection.countDocuments();
+            res.send({ userStats, roleStats, tuitionStats, totalTuitions });
+            } catch (err) {
+                console.error(err);
+                res.status(500).send({ error: "Failed to fetch admin stats" });
+            }
+        });
+
+
+    // Dashboard role (Role base conditional rendering)
         app.get('/users/:email/role', async (req, res) => {
             const email = req.params.email;
             const query = { email }
@@ -322,7 +385,8 @@ async function run() {
             res.send({ role: user?.role || 'user' })
         })
 
-        // Create Stripe checkout session for tutor application
+    // Payment related APIs
+       // Create Stripe checkout session (Applied Tutors page - Payment)
         app.post('/payment-checkout-session', async (req, res) => {
             const { applicationId, expectedSalary, tutorEmail, tutorName, subject, tuitionClass, tuitionId, studentEmail} = req.body;
             const amount = parseInt(expectedSalary) * 100;
@@ -349,128 +413,58 @@ async function run() {
                 });
                 res.send({ url: session.url });
             } catch (error) {
-                    console.error(error);
-                    res.status(500).send({ error: "Failed to create checkout session" });
+                console.error(error);
+                res.status(500).send({ error: "Failed to create checkout session" });
             }
         });
 
-        // Admin dashboard stats
-        app.get('/admin/stats', async (req, res) => {
-            try {
-            const userPipeline = [
-                {
-                    $group: {
-                        _id: '$status',
-                        count: { $sum: 1 }
-                    }
-                }
-            ];
-            const userStats = await userCollection.aggregate(userPipeline).toArray();
 
-            const rolePipeline = [
-                {
-                    $group: {
-                        _id: '$role',
-                        count: { $sum: 1 }
-                    }
-                }
-            ];
-            const roleStats = await userCollection.aggregate(rolePipeline).toArray();
+        // Verify payment success and approve tutor application
+        app.patch('/payment-success', async (req, res) => {
+            const sessionId = req.query.session_id;
+            const session = await stripe.checkout.sessions.retrieve(sessionId);
 
-            // Tuition posts stats
-            const tuitionPipeline = [
-                {
-                    $group: {
-                        _id: '$status',
-                        count: { $sum: 1 }
-                    }
-                }
-            ];
-            const tuitionStats = await tuitionCollection.aggregate(tuitionPipeline).toArray();
+            if (session.payment_status === 'paid') {
+                const transactionId = session.payment_intent;
+                const uniqueSessionId = session.id;
 
-            // Total tuition posts
-            const totalTuitions = await tuitionCollection.countDocuments();
-            res.send({ userStats, roleStats, tuitionStats, totalTuitions });
-            } catch (err) {
-                console.error(err);
-                res.status(500).send({ error: "Failed to fetch admin stats" });
+                const paymentExist = await paymentCollection.findOne({ sessionId: uniqueSessionId });
+                if (paymentExist) {
+                    return res.send(paymentExist) }
+
+                const applicationId = session.metadata.applicationId;
+                const tuitionId = session.metadata.tuitionId;
+                const tutorEmail = session.metadata.tutorEmail;
+
+                const application = await applyTuitionCollection.findOne({ _id: new ObjectId(applicationId) });
+                const tuition = await tuitionCollection.findOne({ _id: new ObjectId(tuitionId) });
+
+                const payment = {
+                    amount: session.amount_total / 100,
+                    currency: session.currency,
+                    studentEmail: session.customer_email,
+                    tutorEmail,
+                    tutorName: application.tutorName,
+                    subject: tuition.subject,
+                    class: tuition.class,
+                    paidAt: new Date(),
+                    transactionId,
+                    sessionId: uniqueSessionId, 
+                    applicationId,
+                    tuitionId,
+                    paymentStatus: session.payment_status
+                };
+
+                await paymentCollection.insertOne(payment);
+                await applyTuitionCollection.updateOne(
+                    { _id: new ObjectId(applicationId) },
+                    { $set: { status: "Approved", transactionId } }
+                );
+
+                return res.send(payment);
             }
+            return res.send({ success: false });
         });
-
-        // Reports & Analytics API
-        app.get('/admin/reports', async (req, res) => {
-        try {
-            const totalEarningsAgg = await paymentCollection.aggregate([
-                { $match: { 
-                    paymentStatus: 'paid' 
-                    }
-                },
-                { $group: {
-                    _id: null, 
-                    total: { $sum: '$amount' } } 
-                }
-            ]).toArray();
-            const totalEarnings = totalEarningsAgg[0]?.total || 0;
-
-            const transactions = await paymentCollection.find({ paymentStatus: 'paid' }).sort({ paidAt: -1 }).toArray();
-            res.send({ totalEarnings, transactions });
-        } catch (err) {
-            console.error(err);
-            res.status(500).send({ error: 'Failed to fetch reports' });
-        }
-        });
-
-
-// Verify payment success and approve tutor application
-app.patch('/payment-success', async (req, res) => {
-  const sessionId = req.query.session_id;
-  const session = await stripe.checkout.sessions.retrieve(sessionId);
-
-  if (session.payment_status === 'paid') {
-    const transactionId = session.payment_intent;
-    const uniqueSessionId = session.id;
-
-   
-    const paymentExist = await paymentCollection.findOne({ sessionId: uniqueSessionId });
-    if (paymentExist) {
-      return res.send(paymentExist);
-    }
-
-    
-    const applicationId = session.metadata.applicationId;
-    const tuitionId = session.metadata.tuitionId;
-    const tutorEmail = session.metadata.tutorEmail;
-
-    const application = await applyTuitionCollection.findOne({ _id: new ObjectId(applicationId) });
-    const tuition = await tuitionCollection.findOne({ _id: new ObjectId(tuitionId) });
-
-    const payment = {
-      amount: session.amount_total / 100,
-      currency: session.currency,
-      studentEmail: session.customer_email,
-      tutorEmail,
-      tutorName: application.tutorName,
-      subject: tuition.subject,
-      class: tuition.class,
-      paidAt: new Date(),
-      transactionId,
-      sessionId: uniqueSessionId, 
-      applicationId,
-      tuitionId,
-      paymentStatus: session.payment_status
-    };
-
-    await paymentCollection.insertOne(payment);
-    await applyTuitionCollection.updateOne(
-      { _id: new ObjectId(applicationId) },
-      { $set: { status: "Approved", transactionId } }
-    );
-
-    return res.send(payment);
-  }
-
-  return res.send({ success: false });
-});
 
 
 

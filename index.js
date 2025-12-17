@@ -2,6 +2,7 @@ const express = require('express')
 const cors = require('cors');
 const app = express();
 require('dotenv').config();
+const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const stripe = require('stripe')(process.env.STRIPE_SECRET);
 
@@ -11,24 +12,45 @@ const port = process.env.PORT || 3000
 app.use(express.json());
 app.use(cors());
 
-const verifyFBToken = async (req, res, next) => {
-    const token = req.headers.authorization;
+// JWT verification middleware
+const verifyJwtToken = (req, res, next) => {
+    const authorization = req.headers.authorization;
+    if (!authorization) {
+        return res.status(401).send({ message: 'Unauthorized access' });
+    }
 
+    const token = authorization.split(' ')[1];
     if (!token) {
-        return res.status(401).send({ message: 'unauthorized access' })
+        return res.status(401).send({ message: 'Unauthorized access' });
     }
 
-    try {
-        const idToken = token.split(' ')[1];
-        const decoded = await admin.auth().verifyIdToken(idToken);
-        console.log('decoded in the token', decoded);
-        req.decoded_email = decoded.email;
-        next();
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (err) {
+        return res.status(401).send({ message: 'Unauthorized access: Invalid or expired token' });
     }
-    catch (err) {
-        return res.status(401).send({ message: 'unauthorized access' })
+    req.user = decoded;
+    next();
+    });
+};
+
+// Admin verification middleware
+const verifyAdmin = (req, res, next) => {
+    if (req.user.role !== 'Admin') {
+        return res.status(403).send({ message: 'Forbidden: Admins only' });
     }
-}
+    next();
+};
+
+// Tutor verification middleware
+const verifyTutor = (req, res, next) => {
+    console.log(req.user);
+    
+    if (req.user.role !== 'Tutor') {
+        return res.status(403).send({ message: 'Forbidden: Tutors only' });
+    }
+    next();
+};
+
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.xue6gdd.mongodb.net/?appName=Cluster0`;
 
@@ -50,6 +72,41 @@ async function run() {
         const tuitionCollection = db.collection('tuitions');
         const applyTuitionCollection = db.collection('appliedTuitions');
         const paymentCollection = db.collection('payments');
+
+        // JWT Token API
+        // app.post('/getToken', async(req, res)=> {
+        //     const loggedUser = req.body;
+        //     console.log("getToken request:", loggedUser);
+        //     const userInDB = await userCollection.findOne({ email: loggedUser.email });
+            
+        //     const payload = { 
+        //         email: loggedUser.email, 
+        //         role: userInDB?.role
+        //     };
+        //     const jwtToken = jwt.sign(payload, process.env.JWT_SECRET, {expiresIn: '1h' })
+        //     res.send({token: jwtToken})
+        // });
+        // JWT Token API
+        app.post('/getToken', async (req, res) => {
+            try {
+                const loggedUser = req.body;
+                console.log("getToken request:", loggedUser);
+                const userInDb = await userCollection.findOne({ email: loggedUser.email });
+
+                const payload = { 
+                    email: loggedUser.email, 
+                    role: userInDb.role 
+                };
+
+                const jwtToken = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
+                res.send({ token: jwtToken });
+            } catch (err) {
+                console.error("Error issuing token:", err);
+                res.status(500).send({ error: 'Failed to issue token' });
+            }
+        });
+
+
 
         // User APIs (Register & Login user info )
         app.post('/users', async (req, res) => {
@@ -291,9 +348,15 @@ async function run() {
         });
 
         // Tutor stats API(Tutor Dashboard Home page)
-        app.get('/tutor/stats/:email', async (req, res) => {
+        app.get('/tutor/stats/:email',verifyJwtToken, verifyTutor,  async (req, res) => {
             try {
-                const email = req.params.email;
+                const email = req.params.email?.toLowerCase().trim(); 
+                const tokenEmail = req.user.email?.toLowerCase().trim();
+                if (tokenEmail !== email) { 
+                    return res.status(403).send({ message: 'Forbidden: You can only view your own stats' }); 
+                }
+
+                // const email = req.params.email;
                 const totalApplications = await applyTuitionCollection.countDocuments({ tutorEmail: email });
                 const approvedApplications = await applyTuitionCollection.countDocuments({ tutorEmail: email, status: 'Approved' });
                 const pendingApplications = await applyTuitionCollection.countDocuments({ tutorEmail: email, status: 'Pending' });
@@ -410,9 +473,12 @@ async function run() {
 
 
     // Dashboard role (Role base conditional rendering)
-        app.get('/users/:email/role', async (req, res) => {
+        app.get('/users/:email/role', verifyJwtToken, async (req, res) => {
             const email = req.params.email;
             const query = { email }
+            if (req.user.email !== email) { 
+                return res.status(403).send({ message: 'Forbidden: You can only view your own role' }); 
+            }
             const user = await userCollection.findOne(query);
             res.send({ role: user?.role || 'user' })
         })

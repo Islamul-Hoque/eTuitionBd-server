@@ -43,7 +43,7 @@ const verifyAdmin = (req, res, next) => {
 
 // Tutor verification middleware
 const verifyTutor = (req, res, next) => {
-    console.log(req.user);
+    // console.log(req.user);
     
     if (req.user.role !== 'Tutor') {
         return res.status(403).send({ message: 'Forbidden: Tutors only' });
@@ -90,7 +90,7 @@ async function run() {
         app.post('/getToken', async (req, res) => {
             try {
                 const loggedUser = req.body;
-                console.log("getToken request:", loggedUser);
+                // console.log("getToken request:", loggedUser);
                 const userInDb = await userCollection.findOne({ email: loggedUser.email });
 
                 const payload = { 
@@ -327,9 +327,6 @@ async function run() {
             }
         });
 
-
-
-
         // Update application (My Applications page-Update)
         app.patch('/applications/:id', async (req, res) => {
             const id = req.params.id;
@@ -349,15 +346,40 @@ async function run() {
         });
 
         // Ongoing tuitions for a tutor (Ongoing Tuitions page)
-        app.get('/tuitions/ongoing/:email', async (req, res) => {
-            const tutorEmail = req.params.email;
+        // app.get('/tuitions/ongoing/:email', async (req, res) => {
+        //     const tutorEmail = req.params.email;
+        //     try {
+        //     const ongoingTuitions = await applyTuitionCollection.find({ tutorEmail: tutorEmail, status: "Approved" }).toArray();
+        //     res.send(ongoingTuitions);
+        //     } catch (err) {
+        //         res.status(500).send({ error: "Failed to fetch ongoing tuitions" });
+        //     }
+        // });
+
+        app.get('/tuitions/ongoing/:email', verifyJwtToken, verifyTutor, async (req, res) => {
             try {
-            const ongoingTuitions = await applyTuitionCollection.find({ tutorEmail: tutorEmail, status: "Approved" }).toArray();
-            res.send(ongoingTuitions);
+                const tutorEmail = req.params.email?.toLowerCase().trim();
+                const tokenEmail = req.user.email?.toLowerCase().trim();
+
+                if (tutorEmail !== tokenEmail) {
+                    return res.status(403).send({ message: 'Forbidden: You can only view your own ongoing tuitions' });
+                }
+
+                const result = await applyTuitionCollection.find({ tutorEmail: tutorEmail, status: "Approved" }).toArray();
+                res.send(result);
             } catch (err) {
+                console.error("Error fetching ongoing tuitions:", err);
                 res.status(500).send({ error: "Failed to fetch ongoing tuitions" });
             }
         });
+
+
+
+
+
+
+
+
 
         // Revenue details for a tutor (Revenue History page)
         app.get('/revenue/:tutorEmail', async (req, res) => {

@@ -449,9 +449,18 @@ async function run() {
         });
 
         // Get all pending tuition posts (Tuition Management page-Get)
-        app.get('/tuitions/pending', async (req, res) => {
-            const result = await tuitionCollection.find({ status: "Pending" }).sort({ createdAt: -1 }).toArray();
-            res.send(result);
+        // app.get('/tuitions/pending', async (req, res) => {
+        //     const result = await tuitionCollection.find({ status: "Pending" }).sort({ createdAt: -1 }).toArray();
+        //     res.send(result);
+        // });
+
+        app.get('/tuitions/pending', verifyJwtToken, verifyAdmin, async (req, res) => {
+            try {
+                const result = await tuitionCollection.find({ status: "Pending" }).sort({ createdAt: -1 }).toArray();
+                res.send(result);
+            } catch (err) {
+                res.status(500).send({ error: "Failed to fetch pending tuitions" });
+            }
         });
 
         // Update tuition status (Tuition Management page-Update)

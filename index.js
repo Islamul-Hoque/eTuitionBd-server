@@ -479,45 +479,57 @@ async function run() {
             });
 
         // Admin dashboard stats (Admin Dashboard Home page)
-        app.get('/admin/stats', async (req, res) => {
+        // app.get('/admin/stats', async (req, res) => {
+        //     try {
+        //     const userPipeline = [
+        //         { $group: { _id: '$status', count: { $sum: 1 } } }
+        //     ];
+        //     const userStats = await userCollection.aggregate(userPipeline).toArray();
+
+        //     const rolePipeline = [
+        //         {  $group: { _id: '$role',  count: { $sum: 1 } } }
+        //     ];
+        //     const roleStats = await userCollection.aggregate(rolePipeline).toArray();
+
+        //     const tuitionPipeline = [
+        //         { $group: {  _id: '$status', count: { $sum: 1 }  } }
+        //     ];
+        //     const tuitionStats = await tuitionCollection.aggregate(tuitionPipeline).toArray();
+
+        //     const totalTuitions = await tuitionCollection.countDocuments();
+        //     res.send({ userStats, roleStats, tuitionStats, totalTuitions });
+        //     } catch (err) {
+        //         res.status(500).send({ error: "Failed to fetch admin stats" });
+        //     }
+        // });
+
+        app.get('/admin/stats', verifyJwtToken, verifyAdmin, async (req, res) => {
             try {
-            const userPipeline = [
-                {
-                    $group: {
-                        _id: '$status',
-                        count: { $sum: 1 }
-                    }
-                }
-            ];
-            const userStats = await userCollection.aggregate(userPipeline).toArray();
+                const userPipeline = [
+                    { $group: { _id: '$status', count: { $sum: 1 } } }
+                ];
+                const rolePipeline = [
+                    { $group: { _id: '$role', count: { $sum: 1 } } }
+                ];
+                const tuitionPipeline = [
+                    { $group: { _id: '$status', count: { $sum: 1 } } }
+                ];
 
-            const rolePipeline = [
-                {
-                    $group: {
-                        _id: '$role',
-                        count: { $sum: 1 }
-                    }
-                }
-            ];
-            const roleStats = await userCollection.aggregate(rolePipeline).toArray();
+                const [userStats, roleStats, tuitionStats, totalTuitions] = await Promise.all([
+                    userCollection.aggregate(userPipeline).toArray(),
+                    userCollection.aggregate(rolePipeline).toArray(),
+                    tuitionCollection.aggregate(tuitionPipeline).toArray(),
+                    tuitionCollection.countDocuments()
+                ]);
 
-            const tuitionPipeline = [
-                {
-                    $group: {
-                        _id: '$status',
-                        count: { $sum: 1 }
-                    }
-                }
-            ];
-            const tuitionStats = await tuitionCollection.aggregate(tuitionPipeline).toArray();
-
-            const totalTuitions = await tuitionCollection.countDocuments();
-            res.send({ userStats, roleStats, tuitionStats, totalTuitions });
+                res.send({ userStats, roleStats, tuitionStats, totalTuitions });
             } catch (err) {
-                console.error(err);
                 res.status(500).send({ error: "Failed to fetch admin stats" });
             }
         });
+
+
+
 
 
     // Dashboard role (Role base conditional rendering)

@@ -248,13 +248,6 @@ async function run() {
         });
 
 
-
-
-
-
-
-
-
         // delete tuition post by id (My Tuitions page-Delete)
         app.delete('/tuition/:id', async (req, res) => {
             const id = req.params.id;
@@ -293,20 +286,48 @@ async function run() {
         });
 
         // Get all applications for a specific tuition post(Applied Tutors pages)
-        app.get('/applications/student/:email', async (req, res) => {
-            const studentEmail = req.params.email;
+        // app.get('/applications/student/:email', async (req, res) => {
+        //     const studentEmail = req.params.email;
 
-            try { const result = await applyTuitionCollection.aggregate([
-                { $lookup: { from: "tuitions", localField: "tuitionId",  foreignField: "_id", as: "tuitionInfo" }},
-                { $unwind: "$tuitionInfo" },
-                { $match: { "tuitionInfo.studentEmail": studentEmail, "tuitionInfo.status": "Approved" } }
+        //     try { const result = await applyTuitionCollection.aggregate([
+        //         { $lookup: { from: "tuitions", localField: "tuitionId",  foreignField: "_id", as: "tuitionInfo" }},
+        //         { $unwind: "$tuitionInfo" },
+        //         { $match: { "tuitionInfo.studentEmail": studentEmail, "tuitionInfo.status": "Approved" } }
+        //         ]).toArray();
+
+        //         res.send(result);
+        //     } catch (error) {
+        //         res.send({ error: "Failed to fetch applications" });
+        //     }
+        // });
+
+        app.get('/applications/student/:email', verifyJwtToken, verifyStudent, async (req, res) => {
+            try {
+                const studentEmail = req.params.email?.toLowerCase().trim();
+                const tokenEmail = req.user.email?.toLowerCase().trim();
+
+                if (studentEmail !== tokenEmail) {
+                    return res.status(403).send({ message: 'Forbidden: You can only view your own applications' });
+                }
+
+                const result = await applyTuitionCollection.aggregate([
+                    { $lookup: { from: "tuitions", localField: "tuitionId", foreignField: "_id", as: "tuitionInfo" } },
+                    { $unwind: "$tuitionInfo" },
+                    { $match: { "tuitionInfo.studentEmail": studentEmail, "tuitionInfo.status": "Approved" } }
                 ]).toArray();
 
                 res.send(result);
             } catch (error) {
-                res.send({ error: "Failed to fetch applications" });
+                res.status(500).send({ error: "Failed to fetch applications" });
             }
         });
+
+
+
+
+
+
+
 
         // Student payment history API (Payment History page)
         app.get('/payments/:email', async (req, res) => {

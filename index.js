@@ -2,6 +2,7 @@ const express = require('express')
 const cors = require('cors');
 const app = express();
 require('dotenv').config();
+
 const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const stripe = require('stripe')(process.env.STRIPE_SECRET);
@@ -322,18 +323,27 @@ async function run() {
             }
         });
 
-
-
-
-
-
-
-
         // Student payment history API (Payment History page)
-        app.get('/payments/:email', async (req, res) => {
-            const email = req.params.email;
-            const payments = await paymentCollection.find({ studentEmail: email, paymentStatus: 'paid' }).sort({ paidAt: -1 }).toArray();
-            res.send(payments);
+        // app.get('/payments/:email', async (req, res) => {
+        //     const email = req.params.email;
+        //     const payments = await paymentCollection.find({ studentEmail: email, paymentStatus: 'paid' }).sort({ paidAt: -1 }).toArray();
+        //     res.send(payments);
+        // });
+
+        app.get('/payments/:email', verifyJwtToken, verifyStudent, async (req, res) => {
+            try {
+                const email = req.params.email?.toLowerCase().trim();
+                const tokenEmail = req.user.email?.toLowerCase().trim();
+
+                if (email !== tokenEmail) {
+                    return res.status(403).send({ message: 'Forbidden: You can only view your own payments' });
+                }
+
+                const payments = await paymentCollection.find({ studentEmail: email, paymentStatus: 'paid' }).sort({ paidAt: -1 }).toArray();
+                res.send(payments);
+            } catch (err) {
+                res.status(500).send({ error: "Failed to fetch payments" });
+            }
         });
 
         // Student stats API (Student Dashboard Home page)
@@ -666,7 +676,7 @@ async function run() {
                 });
                 res.send({ url: session.url });
             } catch (error) {
-                console.error(error);
+                // console.error(error);
                 res.status(500).send({ error: "Failed to create checkout session" });
             }
         });

@@ -213,7 +213,7 @@ async function run() {
     // Dashboard related APIs
     // Student dashboard related APIs
         // Add tuition post ( Add Tuition page)
-        app.post('/add-tuition', async (req, res) => {
+        app.post('/add-tuition',verifyJwtToken, verifyStudent, async (req, res) => {
             const tuition = req.body;
             tuition.createdAt = new Date();
             tuition.status = "Pending";
@@ -248,26 +248,51 @@ async function run() {
 
 
         // delete tuition post by id (My Tuitions page-Delete)
-        app.delete('/tuition/:id', async (req, res) => {
+        // app.delete('/tuition/:id', async (req, res) => {
+        //     const id = req.params.id;
+        //     const result = await tuitionCollection.deleteOne({ _id: new ObjectId(id) });
+        //     res.send(result);
+        // });
+
+        app.delete('/tuition/:id', verifyJwtToken, verifyStudent, async (req, res) => {
             const id = req.params.id;
-            const result = await tuitionCollection.deleteOne({ _id: new ObjectId(id) });
+            const tokenEmail = req.user.email?.toLowerCase().trim();
+            const result = await tuitionCollection.deleteOne({ _id: new ObjectId(id), studentEmail: tokenEmail });
             res.send(result);
         });
 
         // Update tuition post by id (My Tuitions page-Update)
-        app.patch('/tuition/:id', async (req, res) => {
+        // app.patch('/tuition/:id', async (req, res) => {
+        //     const id = req.params.id;
+        //     const updatedTuition = req.body;
+
+        //     if (updatedTuition._id) { delete updatedTuition._id;}
+
+        //     const query = { _id: new ObjectId(id) };
+        //     const update = { $set: updatedTuition };
+
+        //     try { const result = await tuitionCollection.updateOne(query, update);
+        //         res.send(result);
+        //     } catch (error) { res.status(500).send({ error: "Failed to update tuition post" });}
+        // });
+
+        app.patch('/tuition/:id', verifyJwtToken, verifyStudent, async (req, res) => {
             const id = req.params.id;
             const updatedTuition = req.body;
+            if (updatedTuition._id) delete updatedTuition._id;
 
-            if (updatedTuition._id) { delete updatedTuition._id;}
-
-            const query = { _id: new ObjectId(id) };
+            const tokenEmail = req.user.email?.toLowerCase().trim();
+            const query = { _id: new ObjectId(id), studentEmail: tokenEmail };
             const update = { $set: updatedTuition };
 
-            try { const result = await tuitionCollection.updateOne(query, update);
+            try {
+                const result = await tuitionCollection.updateOne(query, update);
                 res.send(result);
-            } catch (error) { res.status(500).send({ error: "Failed to update tuition post" });}
+            } catch (error) {
+                res.status(500).send({ error: "Failed to update tuition post" });
+            }
         });
+
 
         // Apply for a tuition post (Details page - Tutor Apply)
         app.post('/apply-tuition', async (req, res) => {

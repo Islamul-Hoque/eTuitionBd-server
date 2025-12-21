@@ -536,12 +536,25 @@ async function run() {
         });
 
         // Update user info (User Management-Update)
-        app.patch('/users/:id', async (req, res) => {
-            const id = req.params.id;
-            const updateData = req.body;
-            const result = await userCollection.updateOne( { _id: new ObjectId(id) }, { $set: updateData })
-            res.send(result);
-        });
+        // app.patch('/users/:id', async (req, res) => {
+        //     const id = req.params.id;
+        //     const updateData = req.body;
+        //     const result = await userCollection.updateOne( { _id: new ObjectId(id) }, { $set: updateData })
+        //     res.send(result);
+        // });
+
+
+// Update user info
+app.patch('/users/:id', verifyJwtToken, verifyAdmin, async (req, res) => {
+  const id = req.params.id;
+  const updateData = req.body;
+  const result = await userCollection.updateOne(
+    { _id: new ObjectId(id) },
+    { $set: updateData }
+  );
+  res.send(result);
+});
+
 
         // Delete user account (User Management-Delete)
         app.delete('/users/:id', async (req, res) => {
@@ -721,7 +734,6 @@ async function run() {
                 });
                 res.send({ url: session.url });
             } catch (error) {
-                // console.error(error);
                 res.status(500).send({ error: "Failed to create checkout session" });
             }
         });

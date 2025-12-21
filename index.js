@@ -543,25 +543,26 @@ async function run() {
         //     res.send(result);
         // });
 
-
-// Update user info
-app.patch('/users/:id', verifyJwtToken, verifyAdmin, async (req, res) => {
-  const id = req.params.id;
-  const updateData = req.body;
-  const result = await userCollection.updateOne(
-    { _id: new ObjectId(id) },
-    { $set: updateData }
-  );
-  res.send(result);
-});
-
+        app.patch('/users/:id', verifyJwtToken, verifyAdmin, async (req, res) => {
+            const id = req.params.id;
+            const updateData = req.body;
+            const result = await userCollection.updateOne({ _id: new ObjectId(id) }, { $set: updateData } );
+            res.send(result);
+        });
 
         // Delete user account (User Management-Delete)
-        app.delete('/users/:id', async (req, res) => {
+        // app.delete('/users/:id', async (req, res) => {
+        //     const id = req.params.id;
+        //     const result = await userCollection.deleteOne({ _id: new ObjectId(id) });
+        //     res.send(result);
+        // });
+
+        app.delete('/users/:id', verifyJwtToken, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const result = await userCollection.deleteOne({ _id: new ObjectId(id) });
             res.send(result);
         });
+
 
         // Get all pending tuition posts (Tuition Management page-Get)
         // app.get('/tuitions/pending', async (req, res) => {
@@ -576,7 +577,7 @@ app.patch('/users/:id', verifyJwtToken, verifyAdmin, async (req, res) => {
             } catch (err) {
                 res.status(500).send({ error: "Failed to fetch tuitions" });
             }
-            });
+        });
 
 
         // Update tuition status (Tuition Management page-Update)   //  eta real api

@@ -17,7 +17,7 @@ app.use(cors());
 const verifyJwtToken = (req, res, next) => {
     const authorization = req.headers.authorization;
     if (!authorization) {
-        return res.status(401).send({ message: 'Unauthorized access, kire vai tui ekhane data curi korte aschos naki? ' });
+        return res.status(401).send({ message: 'Unauthorized access ' });
     }
 
     const token = authorization.split(' ')[1];
@@ -80,19 +80,6 @@ async function run() {
         const applyTuitionCollection = db.collection('appliedTuitions');
         const paymentCollection = db.collection('payments');
 
-        // JWT Token API
-        // app.post('/getToken', async(req, res)=> {
-        //     const loggedUser = req.body;
-        //     console.log("getToken request:", loggedUser);
-        //     const userInDB = await userCollection.findOne({ email: loggedUser.email });
-            
-        //     const payload = { 
-        //         email: loggedUser.email, 
-        //         role: userInDB?.role
-        //     };
-        //     const jwtToken = jwt.sign(payload, process.env.JWT_SECRET, {expiresIn: '1h' })
-        //     res.send({token: jwtToken})
-        // });
         // JWT Token API
         app.post('/getToken', async (req, res) => {
             try {
@@ -222,13 +209,6 @@ async function run() {
         });
 
         // Get all tuition post by student email (My Tuitions page-Get)
-        // app.get('/my-tuitions', async (req, res) => {
-        //     const email = req.query.email;
-        //     const query = { studentEmail: email, status: "Approved" };
-        //     const result = await tuitionCollection.find(query).sort({ createdAt: -1 }).toArray();
-        //     res.send(result);
-        // });
-
         app.get('/my-tuitions', verifyJwtToken, verifyStudent, async (req, res) => {
             try {
                 const email = req.query.email?.toLowerCase().trim();
@@ -248,12 +228,6 @@ async function run() {
 
 
         // delete tuition post by id (My Tuitions page-Delete)
-        // app.delete('/tuition/:id', async (req, res) => {
-        //     const id = req.params.id;
-        //     const result = await tuitionCollection.deleteOne({ _id: new ObjectId(id) });
-        //     res.send(result);
-        // });
-
         app.delete('/tuition/:id', verifyJwtToken, verifyStudent, async (req, res) => {
             const id = req.params.id;
             const tokenEmail = req.user.email?.toLowerCase().trim();
@@ -262,20 +236,6 @@ async function run() {
         });
 
         // Update tuition post by id (My Tuitions page-Update)
-        // app.patch('/tuition/:id', async (req, res) => {
-        //     const id = req.params.id;
-        //     const updatedTuition = req.body;
-
-        //     if (updatedTuition._id) { delete updatedTuition._id;}
-
-        //     const query = { _id: new ObjectId(id) };
-        //     const update = { $set: updatedTuition };
-
-        //     try { const result = await tuitionCollection.updateOne(query, update);
-        //         res.send(result);
-        //     } catch (error) { res.status(500).send({ error: "Failed to update tuition post" });}
-        // });
-
         app.patch('/tuition/:id', verifyJwtToken, verifyStudent, async (req, res) => {
             const id = req.params.id;
             const updatedTuition = req.body;
@@ -293,8 +253,7 @@ async function run() {
             }
         });
 
-
-        // Apply for a tuition post (Details page - Tutor Apply)
+        // Tutor Apply (Details page)
         app.post('/apply-tuition', async (req, res) => {
             const application = req.body;
             application.appliedAt = new Date();
@@ -310,21 +269,6 @@ async function run() {
         });
 
         // Get all applications for a specific tuition post(Applied Tutors pages)
-        // app.get('/applications/student/:email', async (req, res) => {
-        //     const studentEmail = req.params.email;
-
-        //     try { const result = await applyTuitionCollection.aggregate([
-        //         { $lookup: { from: "tuitions", localField: "tuitionId",  foreignField: "_id", as: "tuitionInfo" }},
-        //         { $unwind: "$tuitionInfo" },
-        //         { $match: { "tuitionInfo.studentEmail": studentEmail, "tuitionInfo.status": "Approved" } }
-        //         ]).toArray();
-
-        //         res.send(result);
-        //     } catch (error) {
-        //         res.send({ error: "Failed to fetch applications" });
-        //     }
-        // });
-
         app.get('/applications/student/:email', verifyJwtToken, verifyStudent, async (req, res) => {
             try {
                 const studentEmail = req.params.email?.toLowerCase().trim();
@@ -347,12 +291,6 @@ async function run() {
         });
 
         // Student payment history API (Payment History page)
-        // app.get('/payments/:email', async (req, res) => {
-        //     const email = req.params.email;
-        //     const payments = await paymentCollection.find({ studentEmail: email, paymentStatus: 'paid' }).sort({ paidAt: -1 }).toArray();
-        //     res.send(payments);
-        // });
-
         app.get('/payments/:email', verifyJwtToken, verifyStudent, async (req, res) => {
             try {
                 const email = req.params.email?.toLowerCase().trim();
@@ -370,20 +308,6 @@ async function run() {
         });
 
         // Student stats API (Student Dashboard Home page)
-        // app.get('/student/stats/:email', async (req, res) => {
-        //     try {
-        //         const email = req.params.email;
-        //         const totalPosts = await tuitionCollection.countDocuments({ studentEmail: email });
-        //         const approved = await tuitionCollection.countDocuments({ studentEmail: email, status: 'Approved' });
-        //         const pending = await tuitionCollection.countDocuments({ studentEmail: email, status: 'Pending' });
-        //         const rejected = await tuitionCollection.countDocuments({ studentEmail: email, status: 'Rejected' });
-        //         res.send({ totalPosts, approved, pending, rejected });
-        //     } catch (err) {
-        //         console.error(err);
-        //         res.status(500).send({ error: 'Failed to fetch student stats' });
-        //     }
-        // });
-
         app.get('/student/stats/:email', verifyJwtToken, verifyStudent, async (req, res) => {
             try {
                 const email = req.params.email?.toLowerCase().trim();
@@ -404,16 +328,8 @@ async function run() {
             }
         });
 
-
     // Tutor related APIs
         // Get all applications by tutor email (My Applications page)
-        // app.get('/my-applications/tutor/:email',  async (req, res) => {
-        //     const tutorEmail = req.params.email;
-        //     const result = await applyTuitionCollection.find({ tutorEmail: tutorEmail }).sort({appliedAt: -1}).toArray();
-        //     res.send(result);
-        // });
-
-
         app.get('/my-applications/tutor/:email', verifyJwtToken, verifyTutor, async (req, res) => {
             try {
                 const tutorEmail = req.params.email?.toLowerCase().trim(); 
@@ -430,16 +346,6 @@ async function run() {
         });
 
         // Update application (My Applications page-Update)
-        // app.patch('/applications/:id', async (req, res) => {
-        //     const id = req.params.id;
-        //     const updateData = req.body;
-        //     const result = await applyTuitionCollection.updateOne(
-        //         { _id: new ObjectId(id), status: { $ne: "Approved" } },
-        //         { $set: updateData }
-        //     );
-        //     res.send(result);
-        // });
-
         app.patch('/applications/:id', verifyJwtToken, verifyTutor, async (req, res) => {
             const id = req.params.id;
             const updateData = req.body;
@@ -452,12 +358,6 @@ async function run() {
         });
 
         // Delete application (My Applications page-Delete)
-        // app.delete('/applications/:id', async (req, res) => {
-        //     const id = req.params.id;
-        //     const result = await applyTuitionCollection.deleteOne({ _id: new ObjectId(id), status: { $ne: "Approved" } });
-        //     res.send(result);
-        // });
-
         app.delete('/applications/:id', verifyJwtToken, verifyTutor, async (req, res) => {
             const id = req.params.id;
             const result = await applyTuitionCollection.deleteOne({ _id: new ObjectId(id), tutorEmail: req.user.email,  status: { $ne: "Approved" }});
@@ -465,16 +365,6 @@ async function run() {
         });
 
         // Ongoing tuitions for a tutor (Ongoing Tuitions page)
-        // app.get('/tuitions/ongoing/:email', async (req, res) => {
-        //     const tutorEmail = req.params.email;
-        //     try {
-        //     const ongoingTuitions = await applyTuitionCollection.find({ tutorEmail: tutorEmail, status: "Approved" }).toArray();
-        //     res.send(ongoingTuitions);
-        //     } catch (err) {
-        //         res.status(500).send({ error: "Failed to fetch ongoing tuitions" });
-        //     }
-        // });
-
         app.get('/tuitions/ongoing/:email', verifyJwtToken, verifyTutor, async (req, res) => {
             try {
                 const tutorEmail = req.params.email?.toLowerCase().trim();
@@ -492,12 +382,6 @@ async function run() {
         });
 
         // Revenue details for a tutor (Revenue History page)
-        // app.get('/revenue/:tutorEmail', async (req, res) => {
-        //     const tutorEmail = req.params.tutorEmail;
-        //     const payments = await paymentCollection.find({ tutorEmail }).toArray();
-        //     res.send(payments);
-        // });
-
         app.get('/revenue/:tutorEmail', verifyJwtToken, verifyTutor, async (req, res) => {
             try {
                 const tutorEmail = req.params.tutorEmail?.toLowerCase().trim();
@@ -537,12 +421,6 @@ async function run() {
 
     // Admin related APIs...
         // Get all users (User Management Page)
-        // app.get('/users', async (req, res) => {
-        //     const result = await userCollection.find({}).sort({createdAt: -1}).toArray();
-        //     res.send(result);
-        // });
-
-        // Get all users (User Management Page)
         app.get('/users', verifyJwtToken, verifyAdmin, async (req, res) => {
             try {
                 const result = await userCollection.find({}).sort({createdAt: -1}).toArray();
@@ -553,13 +431,6 @@ async function run() {
         });
 
         // Update user info (User Management-Update)
-        // app.patch('/users/:id', async (req, res) => {
-        //     const id = req.params.id;
-        //     const updateData = req.body;
-        //     const result = await userCollection.updateOne( { _id: new ObjectId(id) }, { $set: updateData })
-        //     res.send(result);
-        // });
-
         app.patch('/users/:id', verifyJwtToken, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const updateData = req.body;
@@ -568,46 +439,23 @@ async function run() {
         });
 
         // Delete user account (User Management-Delete)
-        // app.delete('/users/:id', async (req, res) => {
-        //     const id = req.params.id;
-        //     const result = await userCollection.deleteOne({ _id: new ObjectId(id) });
-        //     res.send(result);
-        // });
-
         app.delete('/users/:id', verifyJwtToken, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const result = await userCollection.deleteOne({ _id: new ObjectId(id) });
             res.send(result);
         });
 
-
         // Get all pending tuition posts (Tuition Management page-Get)
-        // app.get('/tuitions/pending', async (req, res) => {
-        //     const result = await tuitionCollection.find({ status: "Pending" }).sort({status: -1, createdAt: -1 }).toArray();
-        //     res.send(result);
-        // });
-
         app.get('/tuitions', verifyJwtToken, verifyAdmin, async (req, res) => {
             try {
-                const result = await tuitionCollection.find().sort({   createdAt: -1 }).toArray();
+                const result = await tuitionCollection.find().sort({  createdAt: -1 }).toArray();
                 res.send(result);
             } catch (err) {
                 res.status(500).send({ error: "Failed to fetch tuitions" });
             }
         });
 
-
-        // Update tuition status (Tuition Management page-Update)   //  eta real api
-        // app.patch('/tuitions/:id', async (req, res) => {
-        //     const id = req.params.id;
-        //     const { status } = req.body; 
-        //     const result = await tuitionCollection.updateOne( 
-        //         { _id: new ObjectId(id) }, 
-        //         { $set: { status } }
-        //     );
-        //     res.send(result);
-        // })
-
+        // Update tuition status (Tuition Management page-Update)
         app.patch('/tuitions/:id', verifyJwtToken, verifyAdmin, async (req, res) => {
             try {
                 const id = req.params.id;
@@ -628,21 +476,6 @@ async function run() {
         });
 
         // Reports & Analytics API (Reports & Analytics page)
-        // app.get('/admin/reports', async (req, res) => {
-        //     try {
-        //         const totalEarningsAgg = await paymentCollection.aggregate([
-        //             { $match: {  paymentStatus: 'paid' } },
-        //             { $group: { _id: null,  total: { $sum: '$amount' } } }
-        //         ]).toArray();
-        //         const totalEarnings = totalEarningsAgg[0]?.total || 0;
-
-        //         const transactions = await paymentCollection.find({ paymentStatus: 'paid' }).sort({ paidAt: -1 }).toArray();
-        //         res.send({ totalEarnings, transactions });
-        //     } catch (err) {
-        //         res.status(500).send({ error: 'Failed to fetch reports' });
-        //     }
-        // });
-
         app.get('/admin/reports', verifyJwtToken, verifyAdmin, async (req, res) => {
             try {
                 const totalEarningsAgg = await paymentCollection.aggregate([
@@ -659,30 +492,6 @@ async function run() {
         });
 
         // Admin dashboard stats (Admin Dashboard Home page)
-        // app.get('/admin/stats', async (req, res) => {
-        //     try {
-        //     const userPipeline = [
-        //         { $group: { _id: '$status', count: { $sum: 1 } } }
-        //     ];
-        //     const userStats = await userCollection.aggregate(userPipeline).toArray();
-
-        //     const rolePipeline = [
-        //         {  $group: { _id: '$role',  count: { $sum: 1 } } }
-        //     ];
-        //     const roleStats = await userCollection.aggregate(rolePipeline).toArray();
-
-        //     const tuitionPipeline = [
-        //         { $group: {  _id: '$status', count: { $sum: 1 }  } }
-        //     ];
-        //     const tuitionStats = await tuitionCollection.aggregate(tuitionPipeline).toArray();
-
-        //     const totalTuitions = await tuitionCollection.countDocuments();
-        //     res.send({ userStats, roleStats, tuitionStats, totalTuitions });
-        //     } catch (err) {
-        //         res.status(500).send({ error: "Failed to fetch admin stats" });
-        //     }
-        // });
-
         app.get('/admin/stats', verifyJwtToken, verifyAdmin, async (req, res) => {
             try {
                 const userPipeline = [
